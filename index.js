@@ -71,14 +71,53 @@ else if(password.length < 8 ){
 }
 })
 
-app.get('/usuarios', (req, res) =>{
-  const users = collection(db,'users')
-  console.log('usuarios',users)
+app.get('/usuarios', async(req, res) =>{
+  const colRef = collection(db,'users')
+  const docsSnap = await getDoc(colRef)
+  let data = []
+  docsSnap.forEach(doc=>{
+    data.push(doc.data())
+  })
   res.json({
-    'alert':'Succes',
-    users
+    'alert':'Seccess',
+    data
   })
 })
+
+app.post('/login',(req,res)=>{
+  let {email,password}=req.body
+
+  if (!email.length || !password.length){
+    return res.json({
+      'alert':'no se han recibido los datos correctamente'
+    })
+  }
+  const users = collection(db, 'users')
+  getDoc(doc(users,email))
+  .then( user=>{
+    if (!user.exists) {
+      return res.json({
+        'alert': 'correo no registrado'
+      })
+    }else{
+      bcrypt.compare(password, user.data().password, (error, result) =>{
+        let data = user.data()
+        if (result) {
+            res.json({
+            'alert':'Seccess',
+            name:data.name,
+            email:data.email,
+          })          
+        }else{
+          return res.json({
+            'alert':'Contraseña incorrecta'
+          })
+        }
+      })
+    }
+  })
+})
+
 const PORT = process.env.PORT || 19000
 
 //ejecutar el servidor
